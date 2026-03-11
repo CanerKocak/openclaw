@@ -12,6 +12,7 @@ import { clearPluginCommands } from "./commands.js";
 import {
   applyTestPluginDefaults,
   normalizePluginsConfig,
+  resolveContextEngineSlotDecision,
   resolveEffectiveEnableState,
   resolveMemorySlotDecision,
   type NormalizedPluginsConfig,
@@ -563,8 +564,11 @@ export function loadOpenClawPlugins(options: PluginLoadOptions = {}): PluginRegi
 
   const seenIds = new Map<string, PluginRecord["origin"]>();
   const memorySlot = normalized.slots.memory;
+  const contextEngineSlot = normalized.slots.contextEngine;
   let selectedMemoryPluginId: string | null = null;
+  let selectedContextEnginePluginId: string | null = null;
   let memorySlotMatched = false;
+  let contextEngineSlotMatched = false;
 
   for (const candidate of discovery.candidates) {
     const manifestRecord = manifestByRoot.get(candidate.rootDir);
@@ -633,19 +637,28 @@ export function loadOpenClawPlugins(options: PluginLoadOptions = {}): PluginRegi
       continue;
     }
 
-    // Fast-path bundled memory plugins that are guaranteed disabled by slot policy.
-    // This avoids opening/importing heavy memory plugin modules that will never register.
-    if (candidate.origin === "bundled" && manifestRecord.kind === "memory") {
+    // Fast-path bundled exclusive-slot plugins that are guaranteed disabled by
+    // slot policy. This avoids opening/importing modules that will never register.
+    if (
+      candidate.origin === "bundled" &&
+      (manifestRecord.kind === "memory" || manifestRecord.kind === "context-engine")
+    ) {
       const earlyMemoryDecision = resolveMemorySlotDecision({
         id: record.id,
-        kind: "memory",
+        kind: manifestRecord.kind,
         slot: memorySlot,
         selectedId: selectedMemoryPluginId,
       });
-      if (!earlyMemoryDecision.enabled) {
+      const earlyContextEngineDecision = resolveContextEngineSlotDecision({
+        id: record.id,
+        kind: manifestRecord.kind,
+        slot: contextEngineSlot,
+        selectedId: selectedContextEnginePluginId,
+      });
+      if (!earlyMemoryDecision.enabled || !earlyContextEngineDecision.enabled) {
         record.enabled = false;
         record.status = "disabled";
-        record.error = earlyMemoryDecision.reason;
+        record.error = earlyMemoryDecision.reason ?? earlyContextEngineDecision.reason;
         registry.plugins.push(record);
         seenIds.set(pluginId, candidate.origin);
         continue;
@@ -721,6 +734,9 @@ export function loadOpenClawPlugins(options: PluginLoadOptions = {}): PluginRegi
     if (record.kind === "memory" && memorySlot === record.id) {
       memorySlotMatched = true;
     }
+    if (record.kind === "context-engine" && contextEngineSlot === record.id) {
+      contextEngineSlotMatched = true;
+    }
 
     const memoryDecision = resolveMemorySlotDecision({
       id: record.id,
@@ -728,11 +744,17 @@ export function loadOpenClawPlugins(options: PluginLoadOptions = {}): PluginRegi
       slot: memorySlot,
       selectedId: selectedMemoryPluginId,
     });
+    const contextEngineDecision = resolveContextEngineSlotDecision({
+      id: record.id,
+      kind: record.kind,
+      slot: contextEngineSlot,
+      selectedId: selectedContextEnginePluginId,
+    });
 
-    if (!memoryDecision.enabled) {
+    if (!memoryDecision.enabled || !contextEngineDecision.enabled) {
       record.enabled = false;
       record.status = "disabled";
-      record.error = memoryDecision.reason;
+      record.error = memoryDecision.reason ?? contextEngineDecision.reason;
       registry.plugins.push(record);
       seenIds.set(pluginId, candidate.origin);
       continue;
@@ -740,6 +762,9 @@ export function loadOpenClawPlugins(options: PluginLoadOptions = {}): PluginRegi
 
     if (memoryDecision.selected && record.kind === "memory") {
       selectedMemoryPluginId = record.id;
+    }
+    if (contextEngineDecision.selected && record.kind === "context-engine") {
+      selectedContextEnginePluginId = record.id;
     }
 
     const validatedConfig = validatePluginConfig({
@@ -803,6 +828,16 @@ export function loadOpenClawPlugins(options: PluginLoadOptions = {}): PluginRegi
     registry.diagnostics.push({
       level: "warn",
       message: `memory slot plugin not found or not marked as memory: ${memorySlot}`,
+    });
+  }
+  if (
+    typeof contextEngineSlot === "string" &&
+    contextEngineSlot !== "legacy" &&
+    !contextEngineSlotMatched
+  ) {
+    registry.diagnostics.push({
+      level: "warn",
+      message: `context-engine slot plugin not found or not marked as context-engine: ${contextEngineSlot}`,
     });
   }
 

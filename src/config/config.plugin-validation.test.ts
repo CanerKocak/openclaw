@@ -140,7 +140,7 @@ describe("config plugin validation", () => {
         entries: { "missing-plugin": { enabled: true } },
         allow: ["missing-allow"],
         deny: ["missing-deny"],
-        slots: { memory: "missing-slot" },
+        slots: { memory: "missing-slot", contextEngine: "missing-engine" },
       },
     });
     expect(res.ok).toBe(false);
@@ -156,6 +156,7 @@ describe("config plugin validation", () => {
           { path: "plugins.allow", message: "plugin not found: missing-allow" },
           { path: "plugins.deny", message: "plugin not found: missing-deny" },
           { path: "plugins.slots.memory", message: "plugin not found: missing-slot" },
+          { path: "plugins.slots.contextEngine", message: "plugin not found: missing-engine" },
         ]),
       );
       expect(res.warnings).toContainEqual({
@@ -175,7 +176,7 @@ describe("config plugin validation", () => {
         entries: { [removedId]: { enabled: true } },
         allow: [removedId],
         deny: [removedId],
-        slots: { memory: removedId },
+        slots: { memory: removedId, contextEngine: removedId },
       },
     });
     expect(res.ok).toBe(true);
@@ -199,6 +200,11 @@ describe("config plugin validation", () => {
           },
           {
             path: "plugins.slots.memory",
+            message:
+              "plugin removed: google-antigravity-auth (stale config entry ignored; remove it from plugins config)",
+          },
+          {
+            path: "plugins.slots.contextEngine",
             message:
               "plugin removed: google-antigravity-auth (stale config entry ignored; remove it from plugins config)",
           },

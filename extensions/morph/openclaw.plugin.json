@@ -69,13 +69,11 @@
         "type": "string"
       },
       "baseUrl": {
-        "type": "string",
-        "default": "https://api.morphllm.com"
+        "type": "string"
       },
       "warpGrepTimeoutMs": {
         "type": "number",
-        "minimum": 1000,
-        "default": 60000
+        "minimum": 1000
       },
       "includes": {
         "type": "array",
@@ -90,29 +88,24 @@
         }
       },
       "compactEnabled": {
-        "type": "boolean",
-        "default": true
+        "type": "boolean"
       },
       "compactTimeoutMs": {
         "type": "number",
-        "minimum": 1000,
-        "default": 60000
+        "minimum": 1000
       },
       "compactThresholdChars": {
-        "type": "number",
-        "minimum": 1,
-        "default": 100000
+        "type": "integer",
+        "minimum": 1
       },
       "compactPreserveRecent": {
-        "type": "number",
-        "minimum": 1,
-        "default": 6
+        "type": "integer",
+        "minimum": 1
       },
       "compactCompressionRatio": {
         "type": "number",
         "minimum": 0.05,
-        "maximum": 1,
-        "default": 0.3
+        "maximum": 1
       },
       "compactModel": {
         "type": "string"

@@ -3,6 +3,7 @@ import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent
 import { CHANNEL_IDS, normalizeChatChannelId } from "../channels/registry.js";
 import {
   normalizePluginsConfig,
+  resolveContextEngineSlotDecision,
   resolveEffectiveEnableState,
   resolveMemorySlotDecision,
 } from "../plugins/config-state.js";
@@ -525,8 +526,18 @@ function validateConfigObjectWithPluginsBase(
   if (typeof memorySlot === "string" && memorySlot.trim() && !knownIds.has(memorySlot)) {
     pushMissingPluginIssue("plugins.slots.memory", memorySlot);
   }
+  const contextEngineSlot = normalizedPlugins.slots.contextEngine;
+  if (
+    typeof contextEngineSlot === "string" &&
+    contextEngineSlot.trim() &&
+    contextEngineSlot !== "legacy" &&
+    !knownIds.has(contextEngineSlot)
+  ) {
+    pushMissingPluginIssue("plugins.slots.contextEngine", contextEngineSlot);
+  }
 
   let selectedMemoryPluginId: string | null = null;
+  let selectedContextEnginePluginId: string | null = null;
   const seenPlugins = new Set<string>();
   for (const record of registry.plugins) {
     const pluginId = record.id;
@@ -553,12 +564,25 @@ function validateConfigObjectWithPluginsBase(
         slot: memorySlot,
         selectedId: selectedMemoryPluginId,
       });
+      const contextEngineDecision = resolveContextEngineSlotDecision({
+        id: pluginId,
+        kind: record.kind,
+        slot: contextEngineSlot,
+        selectedId: selectedContextEnginePluginId,
+      });
       if (!memoryDecision.enabled) {
         enabled = false;
         reason = memoryDecision.reason;
       }
+      if (enabled && !contextEngineDecision.enabled) {
+        enabled = false;
+        reason = contextEngineDecision.reason;
+      }
       if (memoryDecision.selected && record.kind === "memory") {
         selectedMemoryPluginId = pluginId;
+      }
+      if (contextEngineDecision.selected && record.kind === "context-engine") {
+        selectedContextEnginePluginId = pluginId;
       }
     }
 

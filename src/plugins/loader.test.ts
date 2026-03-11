@@ -1065,6 +1065,33 @@ describe("loadOpenClawPlugins", () => {
     expect(entry?.status).toBe("disabled");
   });
 
+  it("enforces context-engine slot selection", () => {
+    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    const engineA = writePlugin({
+      id: "engine-a",
+      body: `module.exports = { id: "engine-a", kind: "context-engine", register(api) { api.registerContextEngine("engine-a", () => ({ info: { id: "engine-a", name: "A" }, ingest: async () => ({ ingested: false }), assemble: async (params) => ({ messages: params.messages, estimatedTokens: 0 }), compact: async () => ({ ok: true, compacted: false }) })); } };`,
+    });
+    const engineB = writePlugin({
+      id: "engine-b",
+      body: `module.exports = { id: "engine-b", kind: "context-engine", register(api) { api.registerContextEngine("engine-b", () => ({ info: { id: "engine-b", name: "B" }, ingest: async () => ({ ingested: false }), assemble: async (params) => ({ messages: params.messages, estimatedTokens: 0 }), compact: async () => ({ ok: true, compacted: false }) })); } };`,
+    });
+
+    const registry = loadOpenClawPlugins({
+      cache: false,
+      config: {
+        plugins: {
+          load: { paths: [engineA.file, engineB.file] },
+          slots: { contextEngine: "engine-b" },
+        },
+      },
+    });
+
+    const a = registry.plugins.find((entry) => entry.id === "engine-a");
+    const b = registry.plugins.find((entry) => entry.id === "engine-b");
+    expect(b?.status).toBe("loaded");
+    expect(a?.status).toBe("disabled");
+  });
+
   it("prefers higher-precedence plugins with the same id", () => {
     const bundledDir = makeTempDir();
     writePlugin({

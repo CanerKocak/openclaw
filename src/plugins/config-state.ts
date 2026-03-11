@@ -10,6 +10,7 @@ export type NormalizedPluginsConfig = {
   loadPaths: string[];
   slots: {
     memory?: string | null;
+    contextEngine?: string | null;
   };
   entries: Record<
     string,
@@ -91,6 +92,7 @@ export const normalizePluginsConfig = (
   config?: OpenClawConfig["plugins"],
 ): NormalizedPluginsConfig => {
   const memorySlot = normalizeSlotValue(config?.slots?.memory);
+  const contextEngineSlot = normalizeSlotValue(config?.slots?.contextEngine);
   return {
     enabled: config?.enabled !== false,
     allow: normalizeList(config?.allow),
@@ -98,6 +100,8 @@ export const normalizePluginsConfig = (
     loadPaths: normalizeList(config?.load?.paths),
     slots: {
       memory: memorySlot === undefined ? defaultSlotIdForKey("memory") : memorySlot,
+      contextEngine:
+        contextEngineSlot === undefined ? defaultSlotIdForKey("contextEngine") : contextEngineSlot,
     },
     entries: normalizePluginEntries(config?.entries),
   };
@@ -204,6 +208,9 @@ export function resolveEnableState(
   if (config.slots.memory === id) {
     return { enabled: true };
   }
+  if (config.slots.contextEngine === id) {
+    return { enabled: true };
+  }
   if (config.allow.length > 0 && !config.allow.includes(id)) {
     return { enabled: false, reason: "not in allowlist" };
   }
@@ -255,16 +262,17 @@ export function resolveEffectiveEnableState(params: {
   return base;
 }
 
-export function resolveMemorySlotDecision(params: {
+function resolveExclusiveSlotDecision(params: {
   id: string;
   kind?: string;
+  slotKind: "memory" | "context-engine";
   slot: string | null | undefined;
   selectedId: string | null;
 }): { enabled: boolean; reason?: string; selected?: boolean } {
-  if (params.kind !== "memory") {
+  if (params.kind !== params.slotKind) {
     return { enabled: true };
   }
-  if (params.slot === null) {
+  if (params.slot === null && params.slotKind === "memory") {
     return { enabled: false, reason: "memory slot disabled" };
   }
   if (typeof params.slot === "string") {
@@ -273,14 +281,38 @@ export function resolveMemorySlotDecision(params: {
     }
     return {
       enabled: false,
-      reason: `memory slot set to "${params.slot}"`,
+      reason: `${params.slotKind} slot set to "${params.slot}"`,
     };
   }
   if (params.selectedId && params.selectedId !== params.id) {
     return {
       enabled: false,
-      reason: `memory slot already filled by "${params.selectedId}"`,
+      reason: `${params.slotKind} slot already filled by "${params.selectedId}"`,
     };
   }
   return { enabled: true, selected: true };
+}
+
+export function resolveMemorySlotDecision(params: {
+  id: string;
+  kind?: string;
+  slot: string | null | undefined;
+  selectedId: string | null;
+}): { enabled: boolean; reason?: string; selected?: boolean } {
+  return resolveExclusiveSlotDecision({
+    ...params,
+    slotKind: "memory",
+  });
+}
+
+export function resolveContextEngineSlotDecision(params: {
+  id: string;
+  kind?: string;
+  slot: string | null | undefined;
+  selectedId: string | null;
+}): { enabled: boolean; reason?: string; selected?: boolean } {
+  return resolveExclusiveSlotDecision({
+    ...params,
+    slotKind: "context-engine",
+  });
 }

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { CompactClient } from "@morphllm/morphsdk";
 import type { CompactResult as MorphCompactResult } from "@morphllm/morphsdk";
 import type {
@@ -13,6 +14,9 @@ type MorphCompactInputMessage = {
   role: string;
   content: string;
 };
+
+const CHARS_PER_TOKEN_ESTIMATE = 4;
+const MIN_COMPACTION_FAILURE_TTL_MS = 15_000;
 
 function isTextBlock(block: unknown): block is { type: "text"; text: string } {
   return !!block && typeof block === "object" && (block as { type?: unknown }).type === "text";
@@ -151,13 +155,25 @@ function estimateContextChars(messages: AgentMessage[]): number {
 }
 
 function buildCacheKey(messages: AgentMessage[]): string {
-  return messages
-    .map((message) => {
-      const timestamp =
-        "timestamp" in message && typeof message.timestamp === "number" ? message.timestamp : 0;
-      return `${message.role}:${timestamp}:${serializeMessage(message)}`;
-    })
-    .join("\u001f");
+  const hash = createHash("sha256");
+  for (const [index, message] of messages.entries()) {
+    hash.update(String(index));
+    hash.update("\0");
+    hash.update(message.role);
+    hash.update("\0");
+    if (message.role === "toolResult") {
+      hash.update(message.toolCallId ?? "");
+      hash.update("\0");
+      hash.update(message.toolName ?? "");
+      hash.update("\0");
+    }
+    const serialized = serializeMessage(message);
+    hash.update(String(serialized.length));
+    hash.update("\0");
+    hash.update(serialized);
+    hash.update("\u001f");
+  }
+  return hash.digest("hex");
 }
 
 function toCompactInput(message: AgentMessage): MorphCompactInputMessage | null {
@@ -196,6 +212,81 @@ function buildCompactedMessage(
   };
 }
 
+function resolveCompactionTriggerChars(params: {
+  tokenBudget?: number;
+  thresholdChars: number;
+}): number {
+  if (!params.tokenBudget || !Number.isFinite(params.tokenBudget) || params.tokenBudget <= 0) {
+    return params.thresholdChars;
+  }
+  const tokenBudgetChars = Math.max(
+    CHARS_PER_TOKEN_ESTIMATE,
+    Math.floor(params.tokenBudget * CHARS_PER_TOKEN_ESTIMATE),
+  );
+  return Math.min(params.thresholdChars, tokenBudgetChars);
+}
+
+function resolveCompactionWindow(params: {
+  messages: AgentMessage[];
+  preserveRecent: number;
+}): { olderMessages: AgentMessage[]; recentMessages: AgentMessage[] } | null {
+  let boundary = params.messages.length - params.preserveRecent;
+  while (
+    boundary < params.messages.length &&
+    boundary > 0 &&
+    params.messages[boundary]?.role === "toolResult"
+  ) {
+    boundary += 1;
+  }
+
+  const olderMessages = params.messages.slice(0, boundary);
+  const recentMessages = params.messages.slice(boundary);
+  if (olderMessages.length === 0 || recentMessages.length === 0) {
+    return null;
+  }
+  return { olderMessages, recentMessages };
+}
+
+function normalizeUserBlocks(
+  content: Extract<AgentMessage, { role: "user" }>["content"],
+): Array<{ type: string; text?: string; mimeType?: string }> {
+  if (typeof content === "string") {
+    return [{ type: "text", text: content }];
+  }
+  if (Array.isArray(content)) {
+    return content;
+  }
+  return [];
+}
+
+function buildCompactedMessages(params: {
+  olderMessages: AgentMessage[];
+  recentMessages: AgentMessage[];
+  result: MorphCompactResult;
+}): AgentMessage[] {
+  const summaryMessage = buildCompactedMessage(
+    params.olderMessages[0]!,
+    params.result,
+    params.olderMessages.length,
+  );
+  const [firstRecent, ...restRecent] = params.recentMessages;
+  if (firstRecent?.role !== "user") {
+    return [summaryMessage, ...params.recentMessages];
+  }
+
+  return [
+    {
+      ...firstRecent,
+      timestamp: firstRecent.timestamp ?? summaryMessage.timestamp,
+      content: [
+        ...normalizeUserBlocks(summaryMessage.content),
+        ...normalizeUserBlocks(firstRecent.content),
+      ],
+    },
+    ...restRecent,
+  ];
+}
+
 export class MorphContextEngine implements ContextEngine {
   readonly info = {
     id: "morph",
@@ -207,6 +298,7 @@ export class MorphContextEngine implements ContextEngine {
   private readonly compactClient: CompactClient | null;
   private readonly legacy = new LegacyContextEngine();
   private compactCache: { key: string; result: MorphCompactResult } | null = null;
+  private compactFailureCache: { key: string; until: number } | null = null;
 
   constructor(private readonly api: OpenClawPluginApi) {
     this.config = resolveMorphPluginConfig(api.pluginConfig);
@@ -242,25 +334,38 @@ export class MorphContextEngine implements ContextEngine {
       return base;
     }
 
-    if (estimateContextChars(messages) < this.config.compact.thresholdChars) {
+    const estimatedChars = estimateContextChars(messages);
+    const triggerChars = resolveCompactionTriggerChars({
+      tokenBudget: params.tokenBudget,
+      thresholdChars: this.config.compact.thresholdChars,
+    });
+    if (estimatedChars < triggerChars) {
       return base;
     }
 
-    const olderMessages = messages.slice(0, -this.config.compact.preserveRecent);
-    const recentMessages = messages.slice(-this.config.compact.preserveRecent);
-    if (olderMessages.length === 0) {
+    const compactionWindow = resolveCompactionWindow({
+      messages,
+      preserveRecent: this.config.compact.preserveRecent,
+    });
+    if (!compactionWindow) {
       return base;
     }
+    const { olderMessages, recentMessages } = compactionWindow;
 
     const cacheKey = buildCacheKey(olderMessages);
     if (this.compactCache?.key === cacheKey) {
       return {
         ...base,
-        messages: [
-          buildCompactedMessage(olderMessages[0]!, this.compactCache.result, olderMessages.length),
-          ...recentMessages,
-        ],
+        messages: buildCompactedMessages({
+          olderMessages,
+          recentMessages,
+          result: this.compactCache.result,
+        }),
       };
+    }
+    if (this.compactFailureCache?.key === cacheKey && this.compactFailureCache.until > Date.now()) {
+      this.api.logger.debug?.("morph compact skipped: recent identical failure");
+      return base;
     }
 
     const compactInput = olderMessages
@@ -279,6 +384,7 @@ export class MorphContextEngine implements ContextEngine {
       });
 
       this.compactCache = { key: cacheKey, result };
+      this.compactFailureCache = null;
       this.api.logger.info?.(
         `morph compact: ${olderMessages.length} messages -> ${Math.round(
           result.usage.compression_ratio * 100,
@@ -287,13 +393,18 @@ export class MorphContextEngine implements ContextEngine {
 
       return {
         ...base,
-        messages: [
-          buildCompactedMessage(olderMessages[0]!, result, olderMessages.length),
-          ...recentMessages,
-        ],
+        messages: buildCompactedMessages({
+          olderMessages,
+          recentMessages,
+          result,
+        }),
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      this.compactFailureCache = {
+        key: cacheKey,
+        until: Date.now() + Math.max(MIN_COMPACTION_FAILURE_TTL_MS, this.config.compact.timeoutMs),
+      };
       this.api.logger.warn?.(`morph compact failed: ${message}`);
       return base;
     }

@@ -77,7 +77,19 @@ export function createWarpGrepTool(params: {
         throw new Error("search_term required");
       }
 
-      const repoRoot = params.ctx.workspaceDir ?? process.cwd();
+      const repoRoot = params.ctx.workspaceDir;
+      if (!repoRoot?.trim()) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "WarpGrep search failed: no workspace directory is attached to this session.",
+            },
+          ],
+          details: { success: false, error: "workspace directory missing" },
+        };
+      }
+
       if (!(await ensureDirectory(repoRoot))) {
         return {
           content: [

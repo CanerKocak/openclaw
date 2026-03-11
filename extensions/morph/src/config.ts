@@ -4,6 +4,7 @@ const DEFAULT_COMPACT_TIMEOUT_MS = 60_000;
 const DEFAULT_COMPACT_THRESHOLD_CHARS = 100_000;
 const DEFAULT_COMPACT_PRESERVE_RECENT = 6;
 const DEFAULT_COMPACT_COMPRESSION_RATIO = 0.3;
+const MIN_COMPACT_COMPRESSION_RATIO = 0.05;
 
 export type MorphPluginConfig = {
   apiKey?: string;
@@ -55,6 +56,12 @@ function normalizePositiveNumber(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined;
 }
 
+function normalizePositiveInteger(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? Math.max(1, Math.floor(value))
+    : undefined;
+}
+
 function normalizeBoolean(value: unknown): boolean | undefined {
   return typeof value === "boolean" ? value : undefined;
 }
@@ -73,7 +80,10 @@ function normalizeEnvBoolean(value: string | undefined): boolean | undefined {
 }
 
 function normalizeRatio(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) && value > 0 && value <= 1
+  return typeof value === "number" &&
+    Number.isFinite(value) &&
+    value >= MIN_COMPACT_COMPRESSION_RATIO &&
+    value <= 1
     ? value
     : undefined;
 }
@@ -106,12 +116,12 @@ export function resolveMorphPluginConfig(raw: unknown): ResolvedMorphPluginConfi
         true,
       timeoutMs: normalizePositiveNumber(config.compactTimeoutMs) ?? DEFAULT_COMPACT_TIMEOUT_MS,
       thresholdChars:
-        normalizePositiveNumber(config.compactThresholdChars) ??
-        normalizePositiveNumber(normalizeEnvNumber(process.env.MORPH_COMPACT_CHAR_THRESHOLD)) ??
+        normalizePositiveInteger(config.compactThresholdChars) ??
+        normalizePositiveInteger(normalizeEnvNumber(process.env.MORPH_COMPACT_CHAR_THRESHOLD)) ??
         DEFAULT_COMPACT_THRESHOLD_CHARS,
       preserveRecent:
-        normalizePositiveNumber(config.compactPreserveRecent) ??
-        normalizePositiveNumber(normalizeEnvNumber(process.env.MORPH_COMPACT_PRESERVE_RECENT)) ??
+        normalizePositiveInteger(config.compactPreserveRecent) ??
+        normalizePositiveInteger(normalizeEnvNumber(process.env.MORPH_COMPACT_PRESERVE_RECENT)) ??
         DEFAULT_COMPACT_PRESERVE_RECENT,
       compressionRatio:
         normalizeRatio(config.compactCompressionRatio) ??

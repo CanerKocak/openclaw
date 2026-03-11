@@ -37,6 +37,7 @@ const bundledExtensionSubpathLoaders = [
   { id: "nostr", load: () => import("openclaw/plugin-sdk/nostr") },
   { id: "open-prose", load: () => import("openclaw/plugin-sdk/open-prose") },
   { id: "phone-control", load: () => import("openclaw/plugin-sdk/phone-control") },
+  { id: "morph", load: () => import("openclaw/plugin-sdk/morph") },
   { id: "qwen-portal-auth", load: () => import("openclaw/plugin-sdk/qwen-portal-auth") },
   { id: "synology-chat", load: () => import("openclaw/plugin-sdk/synology-chat") },
   { id: "talk-voice", load: () => import("openclaw/plugin-sdk/talk-voice") },
@@ -125,5 +126,8 @@ describe("plugin-sdk subpath exports", () => {
     const twitch = await import("openclaw/plugin-sdk/twitch");
     expect(typeof twitch.DEFAULT_ACCOUNT_ID).toBe("string");
     expect(typeof twitch.normalizeAccountId).toBe("function");
+
+    const morph = await import("openclaw/plugin-sdk/morph");
+    expect(typeof morph.LegacyContextEngine).toBe("function");
   });
 });

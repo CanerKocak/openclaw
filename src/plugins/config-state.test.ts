@@ -9,6 +9,7 @@ describe("normalizePluginsConfig", () => {
   it("uses default memory slot when not specified", () => {
     const result = normalizePluginsConfig({});
     expect(result.slots.memory).toBe("memory-core");
+    expect(result.slots.contextEngine).toBe("legacy");
   });
 
   it("respects explicit memory slot value", () => {
@@ -16,6 +17,13 @@ describe("normalizePluginsConfig", () => {
       slots: { memory: "custom-memory" },
     });
     expect(result.slots.memory).toBe("custom-memory");
+  });
+
+  it("respects explicit context-engine slot value", () => {
+    const result = normalizePluginsConfig({
+      slots: { contextEngine: "morph" },
+    });
+    expect(result.slots.contextEngine).toBe("morph");
   });
 
   it("disables memory slot when set to 'none' (case insensitive)", () => {
@@ -124,6 +132,18 @@ describe("resolveEnableState", () => {
       normalizePluginsConfig({
         allow: ["telegram"],
         slots: { memory: "memory-core" },
+      }),
+    );
+    expect(state).toEqual({ enabled: true });
+  });
+
+  it("keeps the selected context-engine plugin enabled even when omitted from plugins.allow", () => {
+    const state = resolveEnableState(
+      "morph",
+      "bundled",
+      normalizePluginsConfig({
+        allow: ["telegram"],
+        slots: { contextEngine: "morph" },
       }),
     );
     expect(state).toEqual({ enabled: true });

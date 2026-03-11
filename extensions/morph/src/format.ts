@@ -1,7 +1,7 @@
 import type { WarpGrepResult } from "@morphllm/morphsdk";
 
 function formatLineRanges(lines: "*" | Array<[number, number]> | undefined): string {
-  if (!lines || lines === "*") {
+  if (!lines || lines === "*" || lines.length === 0) {
     return "";
   }
 

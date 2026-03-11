@@ -1,0 +1,16 @@
+{
+  "name": "@openclaw/warpgrep",
+  "version": "2026.3.9",
+  "private": true,
+  "description": "OpenClaw WarpGrep plugin",
+  "type": "module",
+  "dependencies": {
+    "@morphllm/morphsdk": "0.2.134",
+    "@sinclair/typebox": "0.34.48"
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}

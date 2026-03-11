@@ -1,0 +1,63 @@
+{
+  "id": "warpgrep",
+  "name": "WarpGrep",
+  "description": "Native Morph WarpGrep codebase search for the current workspace.",
+  "uiHints": {
+    "apiKey": {
+      "label": "Morph API Key",
+      "help": "Morph API key used for WarpGrep searches. Falls back to MORPH_API_KEY or WARPGREP_API_KEY.",
+      "sensitive": true
+    },
+    "baseUrl": {
+      "label": "Morph API Base URL",
+      "help": "Override the Morph API base URL.",
+      "advanced": true,
+      "placeholder": "https://api.morphllm.com"
+    },
+    "timeoutMs": {
+      "label": "Search Timeout (ms)",
+      "help": "Maximum time to wait for a WarpGrep search.",
+      "advanced": true
+    },
+    "includes": {
+      "label": "Include Globs",
+      "help": "Optional glob allowlist passed to WarpGrep.",
+      "advanced": true
+    },
+    "excludes": {
+      "label": "Exclude Globs",
+      "help": "Optional glob denylist passed to WarpGrep.",
+      "advanced": true
+    }
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "apiKey": {
+        "type": "string"
+      },
+      "baseUrl": {
+        "type": "string",
+        "default": "https://api.morphllm.com"
+      },
+      "timeoutMs": {
+        "type": "number",
+        "minimum": 1000,
+        "default": 60000
+      },
+      "includes": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "excludes": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

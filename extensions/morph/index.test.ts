@@ -439,7 +439,7 @@ describe("morph plugin", () => {
         content: [
           expect.objectContaining({
             type: "text",
-            text: expect.stringContaining("[Morph Compact: 2 messages compressed, 42% kept]"),
+            text: expect.stringContaining("[Morph Compact: 2 messages compressed, 50% kept]"),
           }),
           expect.objectContaining({
             type: "text",

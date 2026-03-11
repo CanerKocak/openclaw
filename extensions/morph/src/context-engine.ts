@@ -190,7 +190,10 @@ function toCompactInput(message: AgentMessage): MorphCompactInputMessage | null 
 
 function buildCompactedMessage(
   templateMessage: AgentMessage,
-  result: MorphCompactResult,
+  params: {
+    result: MorphCompactResult;
+    keptPercent: number;
+  },
   compactedCount: number,
 ): AgentMessage {
   const timestamp =
@@ -206,10 +209,25 @@ function buildCompactedMessage(
         type: "text",
         text:
           `[Morph Compact: ${compactedCount} messages compressed, ` +
-          `${Math.round(result.usage.compression_ratio * 100)}% kept]\n\n${result.output}`,
+          `${params.keptPercent}% kept]\n\n${params.result.output}`,
       },
     ],
   };
+}
+
+function calculateKeptPercent(inputChars: number, outputChars: number): number {
+  if (!Number.isFinite(inputChars) || inputChars <= 0) {
+    return 100;
+  }
+  return Math.max(0, Math.round((outputChars / inputChars) * 100));
+}
+
+function estimateSerializedInputChars(messages: AgentMessage[]): number {
+  return messages.reduce((total, message, index) => {
+    const serializedChars = serializeMessage(message).length;
+    const separatorChars = index > 0 ? 1 : 0;
+    return total + serializedChars + separatorChars;
+  }, 0);
 }
 
 function resolveCompactionTriggerChars(params: {
@@ -264,9 +282,16 @@ function buildCompactedMessages(params: {
   recentMessages: AgentMessage[];
   result: MorphCompactResult;
 }): AgentMessage[] {
+  const keptPercent = calculateKeptPercent(
+    estimateSerializedInputChars(params.olderMessages),
+    params.result.output.length,
+  );
   const summaryMessage = buildCompactedMessage(
     params.olderMessages[0]!,
-    params.result,
+    {
+      result: params.result,
+      keptPercent,
+    },
     params.olderMessages.length,
   );
   const [firstRecent, ...restRecent] = params.recentMessages;
@@ -382,13 +407,15 @@ export class MorphContextEngine implements ContextEngine {
         preserveRecent: 0,
         model: this.config.compact.model,
       });
+      const keptPercent = calculateKeptPercent(
+        estimateSerializedInputChars(olderMessages),
+        result.output.length,
+      );
 
       this.compactCache = { key: cacheKey, result };
       this.compactFailureCache = null;
       this.api.logger.info?.(
-        `morph compact: ${olderMessages.length} messages -> ${Math.round(
-          result.usage.compression_ratio * 100,
-        )}% kept (${result.usage.processing_time_ms}ms)`,
+        `morph compact: ${olderMessages.length} messages -> ${keptPercent}% kept (${result.usage.processing_time_ms}ms)`,
       );
 
       return {

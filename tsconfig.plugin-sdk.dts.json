@@ -53,7 +53,6 @@
     "src/plugin-sdk/tlon.ts",
     "src/plugin-sdk/twitch.ts",
     "src/plugin-sdk/voice-call.ts",
-    "src/plugin-sdk/morph.ts",
     "src/plugin-sdk/zalo.ts",
     "src/plugin-sdk/zalouser.ts",
     "src/types/**/*.d.ts"

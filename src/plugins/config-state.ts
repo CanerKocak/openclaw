@@ -51,6 +51,14 @@ const normalizeSlotValue = (value: unknown): string | null | undefined => {
   return trimmed;
 };
 
+const normalizeContextEngineSlotValue = (value: unknown): string | undefined => {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed || undefined;
+};
+
 const normalizePluginEntries = (entries: unknown): NormalizedPluginsConfig["entries"] => {
   if (!entries || typeof entries !== "object" || Array.isArray(entries)) {
     return {};
@@ -92,7 +100,7 @@ export const normalizePluginsConfig = (
   config?: OpenClawConfig["plugins"],
 ): NormalizedPluginsConfig => {
   const memorySlot = normalizeSlotValue(config?.slots?.memory);
-  const contextEngineSlot = normalizeSlotValue(config?.slots?.contextEngine);
+  const contextEngineSlot = normalizeContextEngineSlotValue(config?.slots?.contextEngine);
   return {
     enabled: config?.enabled !== false,
     allow: normalizeList(config?.allow),
@@ -265,7 +273,7 @@ export function resolveEffectiveEnableState(params: {
 function resolveExclusiveSlotDecision(params: {
   id: string;
   kind?: string;
-  slotKind: "memory" | "context-engine";
+  slotKind: "memory";
   slot: string | null | undefined;
   selectedId: string | null;
 }): { enabled: boolean; reason?: string; selected?: boolean } {
@@ -302,17 +310,5 @@ export function resolveMemorySlotDecision(params: {
   return resolveExclusiveSlotDecision({
     ...params,
     slotKind: "memory",
-  });
-}
-
-export function resolveContextEngineSlotDecision(params: {
-  id: string;
-  kind?: string;
-  slot: string | null | undefined;
-  selectedId: string | null;
-}): { enabled: boolean; reason?: string; selected?: boolean } {
-  return resolveExclusiveSlotDecision({
-    ...params,
-    slotKind: "context-engine",
   });
 }

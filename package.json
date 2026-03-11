@@ -196,10 +196,6 @@
       "types": "./dist/plugin-sdk/voice-call.d.ts",
       "default": "./dist/plugin-sdk/voice-call.js"
     },
-    "./plugin-sdk/morph": {
-      "types": "./dist/plugin-sdk/morph.d.ts",
-      "default": "./dist/plugin-sdk/morph.js"
-    },
     "./plugin-sdk/zalo": {
       "types": "./dist/plugin-sdk/zalo.d.ts",
       "default": "./dist/plugin-sdk/zalo.js"

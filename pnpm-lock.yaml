@@ -88,6 +88,9 @@ importers:
       '@whiskeysockets/baileys':
         specifier: 7.0.0-rc.9
         version: 7.0.0-rc.9(audio-decode@2.2.3)(sharp@0.34.5)
+      ai:
+        specifier: ^5.0.152
+        version: 5.0.152(zod@4.3.6)
       ajv:
         specifier: ^8.18.0
         version: 8.18.0
@@ -421,6 +424,15 @@ importers:
 
   extensions/minimax-portal-auth: {}
 
+  extensions/morph:
+    dependencies:
+      '@morphllm/morphsdk':
+        specifier: 0.2.134
+        version: 0.2.134(@anthropic-ai/sdk@0.73.0(zod@3.25.75))(ai@5.0.152(zod@3.25.75))(ws@8.19.0)(zod@3.25.75)
+      '@sinclair/typebox':
+        specifier: 0.34.48
+        version: 0.34.48
+
   extensions/msteams:
     dependencies:
       '@microsoft/agents-hosting':
@@ -504,15 +516,6 @@ importers:
         specifier: ^4.3.6
         version: 4.3.6
 
-  extensions/warpgrep:
-    dependencies:
-      '@morphllm/morphsdk':
-        specifier: 0.2.134
-        version: 0.2.134(@anthropic-ai/sdk@0.73.0(zod@3.25.75))(ws@8.19.0)(zod@3.25.75)
-      '@sinclair/typebox':
-        specifier: 0.34.48
-        version: 0.34.48
-
   extensions/whatsapp: {}
 
   extensions/zalo:
@@ -594,6 +597,22 @@ packages:
     resolution: {integrity: sha512-TH4utu23Ix8ec34srBHmDD4p3HI0cYleS1jN9lghRczPfhFlMBNrQgZWeBBe12DWy27L11eIrtciY2MXFSEiDg==}
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
+
+  '@ai-sdk/gateway@2.0.57':
+    resolution: {integrity: sha512-Vm6tiB7U/lo9Xt5QiusaUf2xVo69YZf0J0wtYSNGBmPXfZZvOFF5T11JrzAibMcSt2pYTdpFeY9IicWvMaQ+JA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  '@ai-sdk/provider-utils@3.0.22':
+    resolution: {integrity: sha512-fFT1KfUUKktfAFm5mClJhS1oux9tP2qgzmEZVl5UdwltQ1LO/s8hd7znVrgKzivwv1s1FIPza0s9OpJaNB/vHw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  '@ai-sdk/provider@2.0.1':
+    resolution: {integrity: sha512-KCUwswvsC5VsW2PWFqF8eJgSCu5Ysj7m1TxiHTVA6g7k360bk0RNQENT8KTMAYEs+8fWPD3Uu4dEmzGHc+jGng==}
+    engines: {node: '>=18'}
 
   '@anthropic-ai/sdk@0.73.0':
     resolution: {integrity: sha512-URURVzhxXGJDGUGFunIOtBlSl7KWvZiAAKY/ttTkZAkXT9bTPqdk2eK0b8qqSxXpikh3QKPnPYpiyX98zf5ebw==}
@@ -3445,6 +3464,10 @@ packages:
     resolution: {integrity: sha512-2FFo/Kz2vTnOZDv59Q0s803LHf7KzuQ2EwOYYAtO0zUKJ8pV5CPsVC/IHyFb+Fsxl3R9XWFiX529yhslb4v9cQ==}
     engines: {node: '>=22.0.0'}
 
+  '@vercel/oidc@3.1.0':
+    resolution: {integrity: sha512-Fw28YZpRnA3cAHHDlkt7xQHiJ0fcL+NRcIqsocZQUSmbzeIKRpwttJjik5ZGanXP+vlA4SbTg+AbA3bP363l+w==}
+    engines: {node: '>= 20'}
+
   '@vitest/browser-playwright@4.0.18':
     resolution: {integrity: sha512-gfajTHVCiwpxRj1qh0Sh/5bbGLG4F/ZH/V9xvFVoFddpITfMta9YGow0W6ZpTTORv2vdJuz9TnrNSmjKvpOf4g==}
     peerDependencies:
@@ -3575,6 +3598,12 @@ packages:
   agentkeepalive@4.6.0:
     resolution: {integrity: sha512-kja8j7PjmncONqaTsB8fQ+wE2mSU2DJ9D4XKoJ5PFWIdRMa6SLSN1ff4mOr4jCbfRSsxR4keIiySJU0N9T5hIQ==}
     engines: {node: '>= 8.0.0'}
+
+  ai@5.0.152:
+    resolution: {integrity: sha512-cKVkgaNV1iTWQqI1vUAMJztVBsco/lkIVJbmtd8A42PzHN1exyzqQPp1MZNszTCvE1T2kM4dHqmFCATQMYQMLw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
 
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
@@ -4290,6 +4319,10 @@ packages:
   events@3.3.0:
     resolution: {integrity: sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==}
     engines: {node: '>=0.8.x'}
+
+  eventsource-parser@3.0.6:
+    resolution: {integrity: sha512-Vo1ab+QXPzZ4tCa8SwIHJFaSzy4R6SHf7BY79rFBDf0idraZWAkYrDjDj8uWaSm3S2TK+hJ7/t1CEmZ7jXw+pg==}
+    engines: {node: '>=18.0.0'}
 
   execa@4.1.0:
     resolution: {integrity: sha512-j5W0//W7f8UxAn8hXVnwG8tLwdiUy4FJLcSupCg6maBYZDpyBvTApK7KyuI4bKj8KOh1r2YH+6ucuYtJv1bTZA==}
@@ -6761,6 +6794,40 @@ snapshots:
     dependencies:
       zod: 4.3.6
 
+  '@ai-sdk/gateway@2.0.57(zod@3.25.75)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.1
+      '@ai-sdk/provider-utils': 3.0.22(zod@3.25.75)
+      '@vercel/oidc': 3.1.0
+      zod: 3.25.75
+    optional: true
+
+  '@ai-sdk/gateway@2.0.57(zod@4.3.6)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.1
+      '@ai-sdk/provider-utils': 3.0.22(zod@4.3.6)
+      '@vercel/oidc': 3.1.0
+      zod: 4.3.6
+
+  '@ai-sdk/provider-utils@3.0.22(zod@3.25.75)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.1
+      '@standard-schema/spec': 1.1.0
+      eventsource-parser: 3.0.6
+      zod: 3.25.75
+    optional: true
+
+  '@ai-sdk/provider-utils@3.0.22(zod@4.3.6)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.1
+      '@standard-schema/spec': 1.1.0
+      eventsource-parser: 3.0.6
+      zod: 4.3.6
+
+  '@ai-sdk/provider@2.0.1':
+    dependencies:
+      json-schema: 0.4.0
+
   '@anthropic-ai/sdk@0.73.0(zod@3.25.75)':
     dependencies:
       json-schema-to-ts: 3.1.1
@@ -8450,7 +8517,7 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@morphllm/morphsdk@0.2.134(@anthropic-ai/sdk@0.73.0(zod@3.25.75))(ws@8.19.0)(zod@3.25.75)':
+  '@morphllm/morphsdk@0.2.134(@anthropic-ai/sdk@0.73.0(zod@3.25.75))(ai@5.0.152(zod@3.25.75))(ws@8.19.0)(zod@3.25.75)':
     dependencies:
       '@vscode/ripgrep': 1.17.1
       diff: 7.0.0
@@ -8458,6 +8525,7 @@ snapshots:
       openai: 4.104.0(ws@8.19.0)(zod@3.25.75)
     optionalDependencies:
       '@anthropic-ai/sdk': 0.73.0(zod@3.25.75)
+      ai: 5.0.152(zod@3.25.75)
       zod: 3.25.75
     transitivePeerDependencies:
       - encoding
@@ -10416,6 +10484,8 @@ snapshots:
       - '@cypress/request'
       - supports-color
 
+  '@vercel/oidc@3.1.0': {}
+
   '@vitest/browser-playwright@4.0.18(playwright@1.58.2)(vite@7.3.1(@types/node@25.3.5)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.8.2))(vitest@4.0.18)':
     dependencies:
       '@vitest/browser': 4.0.18(vite@7.3.1(@types/node@25.3.5)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.8.2))(vitest@4.0.18)
@@ -10604,6 +10674,23 @@ snapshots:
   agentkeepalive@4.6.0:
     dependencies:
       humanize-ms: 1.2.1
+
+  ai@5.0.152(zod@3.25.75):
+    dependencies:
+      '@ai-sdk/gateway': 2.0.57(zod@3.25.75)
+      '@ai-sdk/provider': 2.0.1
+      '@ai-sdk/provider-utils': 3.0.22(zod@3.25.75)
+      '@opentelemetry/api': 1.9.0
+      zod: 3.25.75
+    optional: true
+
+  ai@5.0.152(zod@4.3.6):
+    dependencies:
+      '@ai-sdk/gateway': 2.0.57(zod@4.3.6)
+      '@ai-sdk/provider': 2.0.1
+      '@ai-sdk/provider-utils': 3.0.22(zod@4.3.6)
+      '@opentelemetry/api': 1.9.0
+      zod: 4.3.6
 
   ajv-formats@3.0.1(ajv@8.18.0):
     optionalDependencies:
@@ -11271,6 +11358,8 @@ snapshots:
       - bare-abort-controller
 
   events@3.3.0: {}
+
+  eventsource-parser@3.0.6: {}
 
   execa@4.1.0:
     dependencies:

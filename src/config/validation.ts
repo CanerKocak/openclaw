@@ -464,6 +464,9 @@ function validateConfigObjectWithPluginsBase(
   const { registry } = ensureRegistry();
   const knownIds = ensureKnownIds();
   const normalizedPlugins = ensureNormalizedPlugins();
+  const pluginKindById = new Map(
+    registry.plugins.map((record) => [record.id, record.kind] as const),
+  );
   const pushMissingPluginIssue = (
     path: string,
     pluginId: string,
@@ -522,17 +525,30 @@ function validateConfigObjectWithPluginsBase(
   }
 
   const memorySlot = normalizedPlugins.slots.memory;
-  if (typeof memorySlot === "string" && memorySlot.trim() && !knownIds.has(memorySlot)) {
-    pushMissingPluginIssue("plugins.slots.memory", memorySlot);
+  if (typeof memorySlot === "string" && memorySlot.trim()) {
+    if (!knownIds.has(memorySlot)) {
+      pushMissingPluginIssue("plugins.slots.memory", memorySlot);
+    } else if (pluginKindById.get(memorySlot) !== "memory") {
+      issues.push({
+        path: "plugins.slots.memory",
+        message: `plugin is not marked as memory: ${memorySlot}`,
+      });
+    }
   }
   const contextEngineSlot = normalizedPlugins.slots.contextEngine;
   if (
     typeof contextEngineSlot === "string" &&
     contextEngineSlot.trim() &&
-    contextEngineSlot !== "legacy" &&
-    !knownIds.has(contextEngineSlot)
+    contextEngineSlot !== "legacy"
   ) {
-    pushMissingPluginIssue("plugins.slots.contextEngine", contextEngineSlot);
+    if (!knownIds.has(contextEngineSlot)) {
+      pushMissingPluginIssue("plugins.slots.contextEngine", contextEngineSlot);
+    } else if (pluginKindById.get(contextEngineSlot) !== "context-engine") {
+      issues.push({
+        path: "plugins.slots.contextEngine",
+        message: `plugin is not marked as context-engine: ${contextEngineSlot}`,
+      });
+    }
   }
 
   let selectedMemoryPluginId: string | null = null;
@@ -549,6 +565,7 @@ function validateConfigObjectWithPluginsBase(
     const enableState = resolveEffectiveEnableState({
       id: pluginId,
       origin: record.origin,
+      kind: record.kind,
       config: normalizedPlugins,
       rootConfig: config,
     });

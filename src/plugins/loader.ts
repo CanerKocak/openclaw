@@ -596,6 +596,7 @@ export function loadOpenClawPlugins(options: PluginLoadOptions = {}): PluginRegi
     const enableState = resolveEffectiveEnableState({
       id: pluginId,
       origin: candidate.origin,
+      kind: manifestRecord.kind,
       config: normalized,
       rootConfig: cfg,
     });

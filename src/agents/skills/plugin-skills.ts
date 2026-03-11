@@ -41,6 +41,7 @@ export function resolvePluginSkillDirs(params: {
     const enableState = resolveEffectiveEnableState({
       id: record.id,
       origin: record.origin,
+      kind: record.kind,
       config: normalizedPlugins,
       rootConfig: params.config,
     });

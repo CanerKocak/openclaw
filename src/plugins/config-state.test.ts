@@ -133,6 +133,7 @@ describe("resolveEnableState", () => {
         allow: ["telegram"],
         slots: { memory: "memory-core" },
       }),
+      "memory",
     );
     expect(state).toEqual({ enabled: true });
   });
@@ -145,8 +146,22 @@ describe("resolveEnableState", () => {
         allow: ["telegram"],
         slots: { contextEngine: "morph" },
       }),
+      "context-engine",
     );
     expect(state).toEqual({ enabled: true });
+  });
+
+  it("does not let a non-slot plugin bypass the allowlist through slot ids", () => {
+    const state = resolveEnableState(
+      "telegram",
+      "bundled",
+      normalizePluginsConfig({
+        allow: ["device-pair"],
+        slots: { memory: "telegram", contextEngine: "telegram" },
+      }),
+      undefined,
+    );
+    expect(state).toEqual({ enabled: false, reason: "not in allowlist" });
   });
 
   it("keeps explicit disable authoritative for the selected memory slot plugin", () => {
@@ -162,6 +177,7 @@ describe("resolveEnableState", () => {
           },
         },
       }),
+      "memory",
     );
     expect(state).toEqual({ enabled: false, reason: "disabled in config" });
   });

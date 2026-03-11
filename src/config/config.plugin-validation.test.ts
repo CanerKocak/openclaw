@@ -167,6 +167,35 @@ describe("config plugin validation", () => {
     }
   });
 
+  it("rejects slot ids that resolve to plugins with the wrong kind", async () => {
+    const res = validateInSuite({
+      agents: { list: [{ id: "pi" }] },
+      plugins: {
+        enabled: false,
+        load: { paths: [bluebubblesPluginDir] },
+        slots: {
+          memory: "bluebubbles-plugin",
+          contextEngine: "bluebubbles-plugin",
+        },
+      },
+    });
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(res.issues).toEqual(
+        expect.arrayContaining([
+          {
+            path: "plugins.slots.memory",
+            message: "plugin is not marked as memory: bluebubbles-plugin",
+          },
+          {
+            path: "plugins.slots.contextEngine",
+            message: "plugin is not marked as context-engine: bluebubbles-plugin",
+          },
+        ]),
+      );
+    }
+  });
+
   it("warns for removed legacy plugin ids instead of failing validation", async () => {
     const removedId = "google-antigravity-auth";
     const res = validateInSuite({

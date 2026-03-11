@@ -202,6 +202,7 @@ export function resolveEnableState(
   id: string,
   origin: PluginRecord["origin"],
   config: NormalizedPluginsConfig,
+  kind?: PluginRecord["kind"],
 ): { enabled: boolean; reason?: string } {
   if (!config.enabled) {
     return { enabled: false, reason: "plugins disabled" };
@@ -213,10 +214,10 @@ export function resolveEnableState(
   if (entry?.enabled === false) {
     return { enabled: false, reason: "disabled in config" };
   }
-  if (config.slots.memory === id) {
+  if (kind === "memory" && config.slots.memory === id) {
     return { enabled: true };
   }
-  if (config.slots.contextEngine === id) {
+  if (kind === "context-engine" && config.slots.contextEngine === id) {
     return { enabled: true };
   }
   if (config.allow.length > 0 && !config.allow.includes(id)) {
@@ -256,10 +257,11 @@ export function isBundledChannelEnabledByChannelConfig(
 export function resolveEffectiveEnableState(params: {
   id: string;
   origin: PluginRecord["origin"];
+  kind?: PluginRecord["kind"];
   config: NormalizedPluginsConfig;
   rootConfig?: OpenClawConfig;
 }): { enabled: boolean; reason?: string } {
-  const base = resolveEnableState(params.id, params.origin, params.config);
+  const base = resolveEnableState(params.id, params.origin, params.config, params.kind);
   if (
     !base.enabled &&
     base.reason === "bundled (disabled by default)" &&

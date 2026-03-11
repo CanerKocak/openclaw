@@ -2,11 +2,15 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { AgentMessage } from "../../src/plugin-sdk/morph.js";
 import register from "./index.js";
+import { createMorphContextEngine } from "./src/context-engine.js";
 import { createWarpGrepTool } from "./src/tool.js";
 
 const mockExecute = vi.fn();
 const mockWarpGrepClient = vi.fn();
+const mockCompact = vi.fn();
+const mockCompactClient = vi.fn();
 
 vi.mock("@morphllm/morphsdk", () => ({
   WarpGrepClient: class {
@@ -16,6 +20,15 @@ vi.mock("@morphllm/morphsdk", () => ({
 
     execute(input: unknown) {
       return mockExecute(input);
+    }
+  },
+  CompactClient: class {
+    constructor(config: unknown) {
+      mockCompactClient(config);
+    }
+
+    compact(input: unknown) {
+      return mockCompact(input);
     }
   },
 }));
@@ -42,18 +55,15 @@ async function* createWarpGrepStream({
   return result;
 }
 
-describe("warpgrep plugin", () => {
+describe("morph plugin", () => {
   let workspaceDir: string;
   let originalMorphApiKey: string | undefined;
-  let originalWarpGrepApiKey: string | undefined;
 
   beforeEach(async () => {
     vi.clearAllMocks();
     originalMorphApiKey = process.env.MORPH_API_KEY;
-    originalWarpGrepApiKey = process.env.WARPGREP_API_KEY;
     delete process.env.MORPH_API_KEY;
-    delete process.env.WARPGREP_API_KEY;
-    workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-warpgrep-"));
+    workspaceDir = await fs.mkdtemp(path.join(os.tmpdir(), "openclaw-morph-"));
   });
 
   afterEach(async () => {
@@ -63,24 +73,21 @@ describe("warpgrep plugin", () => {
       process.env.MORPH_API_KEY = originalMorphApiKey;
     }
 
-    if (originalWarpGrepApiKey === undefined) {
-      delete process.env.WARPGREP_API_KEY;
-    } else {
-      process.env.WARPGREP_API_KEY = originalWarpGrepApiKey;
-    }
-
     await fs.rm(workspaceDir, { recursive: true, force: true });
   });
 
-  it("registers an optional tool factory", () => {
+  it("registers the Morph tool and context engine", () => {
     const api = {
       registerTool: vi.fn(),
+      registerContextEngine: vi.fn(),
     };
 
     register(api as never);
 
     expect(api.registerTool).toHaveBeenCalledTimes(1);
     expect(api.registerTool).toHaveBeenCalledWith(expect.any(Function), { optional: true });
+    expect(api.registerContextEngine).toHaveBeenCalledTimes(1);
+    expect(api.registerContextEngine).toHaveBeenCalledWith("morph", expect.any(Function));
   });
 
   it("returns a setup message when no api key is configured", async () => {
@@ -101,7 +108,7 @@ describe("warpgrep plugin", () => {
         content: [
           expect.objectContaining({
             type: "text",
-            text: expect.stringContaining("WarpGrep is not configured."),
+            text: expect.stringContaining("Morph is not configured."),
           }),
         ],
       }),
@@ -113,7 +120,7 @@ describe("warpgrep plugin", () => {
       pluginConfig: {
         apiKey: "plugin-key",
         baseUrl: "https://morph.example",
-        timeoutMs: 12_345,
+        warpGrepTimeoutMs: 12_345,
         excludes: ["node_modules", ".git"],
       },
       logger: { info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
@@ -175,8 +182,8 @@ describe("warpgrep plugin", () => {
     );
   });
 
-  it("falls back to env api key and surfaces failures", async () => {
-    process.env.WARPGREP_API_KEY = "env-key";
+  it("falls back to MORPH_API_KEY and surfaces failures", async () => {
+    process.env.MORPH_API_KEY = "env-key";
 
     const api = {
       pluginConfig: {},
@@ -217,6 +224,103 @@ describe("warpgrep plugin", () => {
           success: false,
           error: "backend unavailable",
         }),
+      }),
+    );
+  });
+
+  it("compacts older messages through the Morph context engine", async () => {
+    mockCompact.mockResolvedValue({
+      id: "compact-1",
+      output: "Compacted summary",
+      messages: [],
+      usage: {
+        input_tokens: 100,
+        output_tokens: 20,
+        compression_ratio: 0.42,
+        processing_time_ms: 123,
+      },
+      model: "default",
+    });
+
+    const engine = createMorphContextEngine({
+      api: {
+        pluginConfig: {
+          apiKey: "plugin-key",
+          compactThresholdChars: 1,
+          compactPreserveRecent: 2,
+          compactCompressionRatio: 0.3,
+          compactModel: "morph-compactor",
+        },
+        logger: { info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+        config: {},
+      } as never,
+    });
+
+    const messages: AgentMessage[] = [
+      { role: "user", timestamp: 1, content: [{ type: "text", text: "First user message" }] },
+      {
+        role: "assistant",
+        timestamp: 2,
+        api: "anthropic-messages",
+        provider: "anthropic",
+        model: "claude",
+        usage: {
+          input: 1,
+          output: 1,
+          cacheRead: 0,
+          cacheWrite: 0,
+          totalTokens: 2,
+          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+        },
+        stopReason: "stop",
+        content: [{ type: "text", text: "Assistant reply" }],
+      },
+      { role: "user", timestamp: 3, content: [{ type: "text", text: "Recent question" }] },
+      {
+        role: "assistant",
+        timestamp: 4,
+        api: "anthropic-messages",
+        provider: "anthropic",
+        model: "claude",
+        usage: {
+          input: 1,
+          output: 1,
+          cacheRead: 0,
+          cacheWrite: 0,
+          totalTokens: 2,
+          cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+        },
+        stopReason: "stop",
+        content: [{ type: "text", text: "Recent answer" }],
+      },
+    ];
+
+    const result = await engine.assemble({ sessionId: "session-1", messages });
+
+    expect(mockCompact).toHaveBeenCalledWith({
+      messages: [
+        { role: "user", content: "First user message" },
+        { role: "assistant", content: "Assistant reply" },
+      ],
+      compressionRatio: 0.3,
+      preserveRecent: 0,
+      model: "morph-compactor",
+    });
+    expect(mockCompactClient).toHaveBeenCalledWith({
+      morphApiKey: "plugin-key",
+      morphApiUrl: "https://api.morphllm.com",
+      timeout: 60_000,
+    });
+    expect(result.messages).toHaveLength(3);
+    expect(result.messages[0]).toEqual(
+      expect.objectContaining({
+        role: "user",
+        content: [
+          expect.objectContaining({
+            type: "text",
+            text: expect.stringContaining("[Morph Compact: 2 messages compressed, 42% kept]"),
+          }),
+        ],
       }),
     );
   });

@@ -2,8 +2,12 @@ import fs from "node:fs/promises";
 import { WarpGrepClient } from "@morphllm/morphsdk";
 import type { WarpGrepResult } from "@morphllm/morphsdk";
 import { Type } from "@sinclair/typebox";
-import type { AnyAgentTool, OpenClawPluginApi } from "openclaw/plugin-sdk/warpgrep";
-import { resolveWarpGrepPluginConfig } from "./config.js";
+import type {
+  AnyAgentTool,
+  OpenClawPluginApi,
+  OpenClawPluginToolContext,
+} from "../../../src/plugin-sdk/morph.js";
+import { resolveMorphPluginConfig } from "./config.js";
 import { formatWarpGrepResult } from "./format.js";
 
 const WarpGrepSearchSchema = Type.Object(
@@ -86,13 +90,13 @@ export function createWarpGrepTool(params: {
         };
       }
 
-      const config = resolveWarpGrepPluginConfig(params.api.pluginConfig);
+      const config = resolveMorphPluginConfig(params.api.pluginConfig);
       if (!config.apiKey) {
         return {
           content: [
             {
               type: "text",
-              text: "WarpGrep is not configured.\n\nSet plugins.entries.warpgrep.config.apiKey, MORPH_API_KEY, or WARPGREP_API_KEY.",
+              text: "Morph is not configured.\n\nSet plugins.entries.morph.config.apiKey or MORPH_API_KEY.",
             },
           ],
           details: { success: false, configured: false, repoRoot },
@@ -102,7 +106,7 @@ export function createWarpGrepTool(params: {
       const client = new WarpGrepClient({
         morphApiKey: config.apiKey,
         morphApiUrl: config.baseUrl,
-        timeout: config.timeoutMs,
+        timeout: config.warpGrepTimeoutMs,
       });
 
       const startedAt = Date.now();

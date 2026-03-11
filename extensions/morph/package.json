@@ -1,8 +1,8 @@
 {
-  "name": "@openclaw/warpgrep",
+  "name": "@openclaw/morph",
   "version": "2026.3.9",
   "private": true,
-  "description": "OpenClaw WarpGrep plugin",
+  "description": "OpenClaw Morph integration",
   "type": "module",
   "dependencies": {
     "@morphllm/morphsdk": "0.2.134",

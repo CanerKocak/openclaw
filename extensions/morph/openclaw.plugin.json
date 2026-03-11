@@ -1,0 +1,122 @@
+{
+  "id": "morph",
+  "kind": "context-engine",
+  "name": "Morph",
+  "description": "Native Morph WarpGrep codebase search plus fast context compaction for OpenClaw.",
+  "uiHints": {
+    "apiKey": {
+      "label": "Morph API Key",
+      "help": "Morph API key used for WarpGrep searches and fast compaction. Falls back to MORPH_API_KEY.",
+      "sensitive": true
+    },
+    "baseUrl": {
+      "label": "Morph API Base URL",
+      "help": "Override the Morph API base URL.",
+      "advanced": true,
+      "placeholder": "https://api.morphllm.com"
+    },
+    "warpGrepTimeoutMs": {
+      "label": "WarpGrep Timeout (ms)",
+      "help": "Maximum time to wait for a WarpGrep search.",
+      "advanced": true
+    },
+    "includes": {
+      "label": "Include Globs",
+      "help": "Optional glob allowlist passed to WarpGrep.",
+      "advanced": true
+    },
+    "excludes": {
+      "label": "Exclude Globs",
+      "help": "Optional glob denylist passed to WarpGrep.",
+      "advanced": true
+    },
+    "compactEnabled": {
+      "label": "Enable Fast Compaction",
+      "help": "Compact older context with Morph before the model call.",
+      "advanced": true
+    },
+    "compactTimeoutMs": {
+      "label": "Compaction Timeout (ms)",
+      "help": "Maximum time to wait for Morph compaction.",
+      "advanced": true
+    },
+    "compactThresholdChars": {
+      "label": "Compaction Threshold (chars)",
+      "help": "Only compact when the assembled context reaches this approximate size.",
+      "advanced": true
+    },
+    "compactPreserveRecent": {
+      "label": "Keep Recent Messages",
+      "help": "Number of newest messages to leave uncompressed.",
+      "advanced": true
+    },
+    "compactCompressionRatio": {
+      "label": "Compaction Ratio",
+      "help": "Fraction of older context Morph should keep during compaction.",
+      "advanced": true
+    },
+    "compactModel": {
+      "label": "Compaction Model",
+      "help": "Optional Morph compaction model override passed to the compact endpoint.",
+      "advanced": true
+    }
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "apiKey": {
+        "type": "string"
+      },
+      "baseUrl": {
+        "type": "string",
+        "default": "https://api.morphllm.com"
+      },
+      "warpGrepTimeoutMs": {
+        "type": "number",
+        "minimum": 1000,
+        "default": 60000
+      },
+      "includes": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "excludes": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "compactEnabled": {
+        "type": "boolean",
+        "default": true
+      },
+      "compactTimeoutMs": {
+        "type": "number",
+        "minimum": 1000,
+        "default": 60000
+      },
+      "compactThresholdChars": {
+        "type": "number",
+        "minimum": 1,
+        "default": 100000
+      },
+      "compactPreserveRecent": {
+        "type": "number",
+        "minimum": 1,
+        "default": 6
+      },
+      "compactCompressionRatio": {
+        "type": "number",
+        "minimum": 0.05,
+        "maximum": 1,
+        "default": 0.3
+      },
+      "compactModel": {
+        "type": "string"
+      }
+    }
+  }
+}

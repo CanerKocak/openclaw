@@ -522,6 +522,16 @@ export async function runOnboardingWizard(
     });
   }
 
+  if (opts.skipMorph) {
+    await prompter.note("Skipping Morph compaction setup.", "Compaction");
+  } else {
+    const { setupMorph } = await import("../commands/onboard-morph.js");
+    nextConfig = await setupMorph(nextConfig, runtime, prompter, {
+      quickstartDefaults: flow === "quickstart",
+      secretInputMode: opts.secretInputMode,
+    });
+  }
+
   if (opts.skipSkills) {
     await prompter.note("Skipping skills setup.", "Skills");
   } else {

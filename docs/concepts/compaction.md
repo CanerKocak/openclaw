@@ -54,6 +54,42 @@ This also works with local models, for example a second Ollama model dedicated t
 
 When unset, compaction uses the agent's primary model.
 
+## Morph fast compaction
+
+Morph provides a dedicated compaction API that compresses conversation context at 25k+ tokens per second with sub-300ms latency. When configured, OpenClaw uses Morph for compaction and automatically falls back to LLM summarization if the Morph API is unavailable.
+
+```json
+{
+  "agents": {
+    "defaults": {
+      "compaction": {
+        "provider": "morph",
+        "morphApiKey": "morph-..."
+      }
+    }
+  }
+}
+```
+
+You can also set the key via the `MORPH_API_KEY` environment variable instead of storing it in config.
+
+The `compressionRatio` setting (0.05-1.0, default 0.3) controls how aggressively context is compressed. Lower values produce shorter summaries:
+
+```json
+{
+  "agents": {
+    "defaults": {
+      "compaction": {
+        "provider": "morph",
+        "compressionRatio": 0.2
+      }
+    }
+  }
+}
+```
+
+Run `openclaw onboard` to set up Morph compaction interactively, or pass `--morph-api-key <key>` for non-interactive setup.
+
 ## Auto-compaction (default on)
 
 When a session nears or exceeds the model’s context window, OpenClaw triggers auto-compaction and may retry the original request using the compacted context.

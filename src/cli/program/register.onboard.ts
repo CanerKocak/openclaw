@@ -120,6 +120,8 @@ export function registerOnboardCommand(program: Command) {
     .option("--skip-channels", "Skip channel setup")
     .option("--skip-skills", "Skip skills setup")
     .option("--skip-search", "Skip search provider setup")
+    .option("--skip-morph", "Skip Morph compaction setup")
+    .option("--morph-api-key <key>", "Morph compaction API key")
     .option("--skip-health", "Skip health check")
     .option("--skip-ui", "Skip Control UI/TUI prompts")
     .option("--node-manager <name>", "Node manager for skills: npm|pnpm|bun")
@@ -197,6 +199,8 @@ export function registerOnboardCommand(program: Command) {
           skipChannels: Boolean(opts.skipChannels),
           skipSkills: Boolean(opts.skipSkills),
           skipSearch: Boolean(opts.skipSearch),
+          skipMorph: Boolean(opts.skipMorph),
+          morphApiKey: opts.morphApiKey as string | undefined,
           skipHealth: Boolean(opts.skipHealth),
           skipUi: Boolean(opts.skipUi),
           nodeManager: opts.nodeManager as NodeManagerChoice | undefined,

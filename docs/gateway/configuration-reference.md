@@ -1003,6 +1003,10 @@ Periodic heartbeat runs.
     defaults: {
       compaction: {
         mode: "safeguard", // default | safeguard
+        provider: "default", // default | morph
+        morphApiUrl: "https://api.morphllm.com",
+        morphApiKey: "morph-...",
+        compressionRatio: 0.3, // 0.05–1.0 (Morph only)
         reserveTokensFloor: 24000,
         identifierPolicy: "strict", // strict | off | custom
         identifierInstructions: "Preserve deployment IDs, ticket IDs, and host:port pairs exactly.", // used when identifierPolicy=custom
@@ -1021,6 +1025,10 @@ Periodic heartbeat runs.
 ```
 
 - `mode`: `default` or `safeguard` (chunked summarization for long histories). See [Compaction](/concepts/compaction).
+- `provider`: `default` (LLM summarization) or `morph` (Morph fast compaction API). When `morph`, compaction calls `/v1/compact` and falls back to LLM on failure. Setting `morph` forces `mode: "safeguard"`.
+- `morphApiUrl`: Morph API base URL. Default: `https://api.morphllm.com`.
+- `morphApiKey`: Morph API key. Also accepted via `MORPH_API_KEY` environment variable.
+- `compressionRatio`: target compression ratio for Morph compaction (0.05-1.0). Default: `0.3`. Lower values produce shorter summaries.
 - `identifierPolicy`: `strict` (default), `off`, or `custom`. `strict` prepends built-in opaque identifier retention guidance during compaction summarization.
 - `identifierInstructions`: optional custom identifier-preservation text used when `identifierPolicy=custom`.
 - `postCompactionSections`: optional AGENTS.md H2/H3 section names to re-inject after compaction. Defaults to `["Session Startup", "Red Lines"]`; set `[]` to disable reinjection. When unset or explicitly set to that default pair, older `Every Session`/`Safety` headings are also accepted as a legacy fallback.
